@@ -12,7 +12,7 @@ kody_krajow="cn kn ru"
 nazwa_list_ipset="zablokowane_kraje"
 
 komunikat() {
-	[[ "$log" = "tak" ]] && echo $@ >>"$XDG_HOME_CONFIG/etc/iptables.log" || echo "$@"
+	[[ "$log" = "tak" ]] && echo $@ >>"$XDG_CONFIG_HOME/etc/iptables.log" || echo "$@"
 }
 
 while getopts "l" opt
@@ -66,6 +66,6 @@ komunikat "\nResetuję iptables:\t"
 echo "Nowe reguły iptables:"
 iptables -L
 komunikat "Zapisuję ipset"
-ipset save -file $XDG_HOME_CONFIG/etc/ipset.${nazwa_list_ipset}
+ipset save -file $XDG_CONFIG_HOME/etc/ipset.${nazwa_list_ipset}
 komunikat "[blokuj.kraje.po.ip.sh] [$(date)] Zakończyłem uzupełnianie adresów dla iptables"
 exit 0
