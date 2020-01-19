@@ -14,7 +14,8 @@
 #      
 #       Part of documentation creation tools.
 #
-declare -a imgSize
+# 
+declare -a chosenLogo overlayFileName outFileName imgInfo imgDensity basePixelSize overlayPixelSize marginPixelSize imgSize
 
 for inFileName in "$@" ; do
   chosenLogo="${inFileName%%_*f}"
@@ -32,5 +33,5 @@ for inFileName in "$@" ; do
   # convert -composite -background none -geometry "+${marginPixelSize}+${marginPixelSize}" -gravity northeast ${inFileName} ${overlayFileName} ${outFileName}
   convert "${inFileName}" -background none \( ${overlayFileName} -density ${imgDensity} -resize "${overlayPixelSize}" -geometry "+${marginPixelSize}+${marginPixelSize}" -gravity northeast \) -composite ${outFileName}
 done
-
+unset chosenLogo overlayFileName outFileName imgInfo imgDensity basePixelSize overlayPixelSize marginPixelSize imgSize
 #vim: ft=bash ts=2 tw=2
