@@ -1,0 +1,141 @@
+#!/bin/bash
+##########################################################
+# name: _compress
+# author; Tomasz Winiarski
+# last change: 20180412 
+#
+# description: rudimentary cli archiver for files/dirs
+#
+# USAGE: compare show_help below or use '_compress --help'
+#
+##########################################################
+#
+# TODO:
+# - in/out from pipe. Low priority, no real need for it
+#   just yet.
+# 
+##########################################################
+#
+# for USER:
+#
+# use defaults whenever in doubt
+# use '7z' when rights and ownership not needed
+# use '7z/zip' for win/mac recipients
+#
+
+# ============ vars
+declare cli_args=()
+# defaults, may be overwritten with cli args
+declare archive_name="" # created from filenames
+declare files=() # from cli
+declare files_menu="" # set if --menu|-m used
+declare format="tar.gz"
+# optional $time, $format are set during arg parsing 
+# ============ funcs 
+# shared functionality
+declare -A color
+#do NOT put term-specific escapes here
+color[warning]="$(tput setaf 1)" 
+color[reset]="$(tput sgr0)"
+# if you need logic to display msg
+# differently depending on environment
+# (console|term|X no out to term|out to file) 
+# uncomment source line, and comment out err,msg,warn
+#
+# source _shared.err.msg
+function msg { echo -e "--> $@"; return 0; } 
+
+function warn { 
+  msg "${color[warning]}${@}${color[reset]}"
+  [[ $fname_warnings ]] && echo "$@" >> $fname_warnings
+  return 0
+}
+
+function err { warn "$@"; exit 129; } # no need for different error codes so far
+
+function check_format {
+      ff="$@"
+      # in practice we use only those
+      # so do not bother adding kitchen sink here 
+      legal_formats=('tar.gz' '7z' 'gzip' 'zip')
+      for lf in ${legal_formats[@]}; do
+        [[ "$ff" == "${lf}" ]] && return 0 
+      done
+      return 1
+}
+
+function show_help {
+cat << 'HELPMSG'
+  _compress - compress files into archive, .tar.gz by default.
+
+  USAGE:
+
+  _compress [options] path [path2...]
+
+  options:
+
+    -f|--format 7z|gzip|tar|zip
+      :defines output format to use instead of default tar.gz.
+       Illegal formats are discarded and tar.gz is used.
+
+    -m|--menu 
+      :choose file/dir to compress from menu (mmenu.sh|dmenu required)
+
+    -h|--help
+      :print this help message and exit
+
+    -n|-o|--archive-name <name> 
+      :custom output archive name (extension-based archive format guessing is *not* performed, use --format|-f).
+
+    -t|--timestamp
+      :added to the end of a filename just before extension (YYYYmmddHHMM).
+
+HELPMSG
+}
+## args parsing (GNU getopt)
+cli_args=$(getopt --options f:hmn:t --longoptions format:,help,menu,archive-name:,timestamp -n "$0" -- "$@")
+eval set -- "$cli_args"
+
+while true ; do
+  case "$1" in
+    -f|--format) check_format "$2" && format="$2" || err "unrecognized archive format: $2"; shift 2;;
+    -n|-o|--archive-name) archive_name="$2" ; shift 2 ;;
+    -m|--menu) files_menu=1; shift;;
+    -t|--timestamp) declare time="_$(date +%Y%m%d%H%M)" ; shift ;;
+    -h|--help) show_help && exit 0 ;;
+    *) shift 1 ; break ;;
+  esac
+done
+
+files=("$@")
+echo ${files[@]}
+
+if [[ ! $files ]] ; then
+  if [[ $files_menu ]] ; then
+    [[ $(which mmenu.sh) ]] || err "No dmenu|mmenu.sh in path. Aborting."
+    files="$(ls -1A $PWD | mmenu.sh)"
+  else 
+    err "No files chosen. Aborting."
+  fi
+fi
+
+[[ $archive_name ]] || archive_name="$(echo $(basename "${files[0]}")${time}.${format:-tar.gz} | sed -r 's/^\.//g')"
+echo "archive name: ${archive_name}"
+if [[ -e $archive_name ]]; then
+ msg "$archive_name exists. Overwrite? [y/N]: " 
+ read -n1 aa
+ case "$aa" in 
+   t|T|tak|y|Y|yes) ;;
+   *) err "Aborted by user." ;;
+ esac
+fi
+
+declare gzip_cmd="gzip --best --verbose --recursive"
+case "$format" in # I do not quiet archivers' output on purpose 
+  '7z') 7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on ${archive_name} ${files_to_compress} ;;
+  'gzip') ${gzip_cmd} --recursive ${files_to_compress} > ${archive_name} ;;
+  'zip') zip -r ${archive_name} ${files_to_compress} ;;
+  *) tar cfv - ${files_to_compress} | ${gzip_cmd} > ${archive_name} ;;
+esac;
+
+unset aa archive_name cli_args gzip_cmd illegal_format files format files_to_compress time

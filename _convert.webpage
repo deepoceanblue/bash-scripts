@@ -1,0 +1,246 @@
+#!/bin/bash
+####################################################################################
+# name: _convert.webpage
+# author: Tomasz Winiarski
+# date: 201912241311
+#
+# desc: Part of automated documentation tools
+#
+# creates numbered snapshots of urls from file
+# adds annotation and converts to given image format/pdf, 
+#
+# deps: convert (labeling, format conversion), CutyCapt(capturing with wkhtml), ping, 
+#       sed, xclip (only if pasting urls)
+# in: <sitename>.txt (plaintext, UTF-8, one url per line)
+# out: annotated_<sitename_no_YYYYmmddHHMMSS>.png
+#
+#####################################################################################
+#
+# USAGE: see show_help below, or use '_convert.webpage --help'
+#
+#####################################################################################
+#
+# for USER:  if handed out input file other than plaintext, 
+#            insert _convert script earlier in the chain 
+#
+
+declare -A color
+# do NOT put term/console-specific escapes here
+# if you need them source _shared.err.msg
+color[warning]="$(tput setaf 1)" 
+color[reset]="$(tput sgr0)"
+
+# if you need logic to display msg
+# differently depending on environment
+# (console|term|X no out to term|out to file) 
+# uncomment source line, and comment out err,msg,warn
+#
+# source _shared.err.msg
+function show_help {
+cat <<'HELPMSG'
+    _convert.webpage:
+
+      Part of project documentation tools.
+      Creates numbered, timestamped and tagged snapshots of a wepage as image/pdf.
+
+    USAGE:
+
+      _convert.webpage [options] --file <filename>|--dir <dirname>|--paste
+
+      Requires: convert, CutyCapt, ping, sed 
+
+      All long options have equivalent short forms.
+      *Always* use *long forms* in internal scripts and wrappers.
+
+      One of '-d <dirname>|-f <filename>|-p' must be provided.
+
+      --dir|-d
+        :directory with input files (see '--file' below).
+         No recursion.
+
+      --dir-out|-D
+        :output directory ($PWD by default).
+
+      --extension|-e
+        :filetype for output file.
+         See 'CutyCapt --help' for complete list. 
+         Use png/pdf unless explicitly ordered otherwise.
+
+      --file|-f
+        :input file, format: text/plain, utf-8, one url per line. 
+         Filename should be '<sitename>.txt', e.g. 'teatrfigur.pl.txt'.
+
+      --help|-h
+        :show this message and exit.
+
+      --log-warnings
+        :log warning and error messages to file 'convert.webpage_<YmdHM>.log'.
+         Switched on when '--quiet' used.
+
+      --paste|-p
+        :paste urls from clipboard. 'xclip' in path required. 
+         One url per line.
+
+      --prefix|-p
+        :prefix to use in output files.
+         By default input file name without '.txt' is used.
+
+      --quiet|-q
+        :silence warning and error messages.
+         Switches logging on (see '--log-warnings' above).
+
+HELPMSG
+
+return 0
+}
+
+function msg { echo -e "--> $@"; return 0; } 
+
+function warn { 
+  msg "${color[warning]}${@}${color[reset]}"
+  [[ $fname_warnings ]] && echo "$@" >> $fname_warnings
+  return 0
+}
+
+function err { warn "$@"; exit 129; } # no need for different error codes so far
+
+declare -a allowed_exts=('svg' 'ps' 'pdf' 'png' 'jpeg' 'tiff' 'gif' 'bmp' 'ppm' 'xbm' 'xpm' 'png')
+declare -a required_apps=('convert' 'CutyCapt' 'ping' 'sed')
+
+# defaults, all may be overwritten from cli
+declare -a dir_out='.' 
+declare -a ext='png'
+declare -a fname_log=''
+declare -a prefix='' # --prefix, or created later on per-file basis 
+
+# must be passed on cli
+declare -a fnames=()
+
+while : ; do
+  case "$1" in
+
+    --dir|-d)
+      shift;
+      [[ -d "${1}" ]] || err "${1} does not exists or is not a directory"
+      readarray -t fnames < "${1}/*" ;
+      shift
+      ;;
+
+    --dir-out|-D)
+      shift
+      [[ -d "${1}" ]] || mkdir -p "./${1}" && msg "created dir ./${1}";
+      shift
+      ;;
+
+    --extension|-e)
+      shift
+      [[ $(echo "${allowed_exts[@]}" | grep -w "${1}") ]] || err "illegal extension: $1.\nUse one of: ${allowed_exts[@]}."
+      ext="${1}"
+      shift
+      ;;
+
+    --file|-f) shift; fnames=("${1}") ; shift;;
+
+    --help|-h) shift; show_help && exit 0;;
+
+    --log-warnings|-w) 
+      shift
+      fname_warnings="convert.webpage_$(date +%Y%m%d%H%M).log"
+      msg "Logging to $fname_warnings."
+      ;;
+
+    --paste|-p) 
+      shift
+      if [[ $(which $clip_app) ]]; then 
+        fnames="$(xclip -o)" ; shift ; # in: one url per line 
+      else
+        err "no $clip_app in $PATH"
+      fi
+      ;;
+
+
+    --prefix|-p) shift; prefix="${1}" ; shift ;;
+
+    --quiet|-q) 
+      shift
+      quiet="true"
+      if [[ ! $fname_warnings ]]; then
+        fname_warnings="convert.webpage_$(date +%Ym%d%H%M).log" 
+        warn "Logging to $fname_warnings."
+      fi
+      ;;
+
+    *) [[ !$1 ]] && break || err "unknown option $1" ;;
+  esac
+done
+
+
+for app in ${required_apps}; do
+  [[ $(which $app) ]] || err "$app: not in the path";
+done
+
+[[ $fnames  ]] || err 'provide at least one valid filename'
+
+[[ -d "${dir_out}/" ]] || mkdir -p "${dir_out}"
+
+for fname in ${fnames[@]} ; do 
+ if [[ -e $fname ]]; then
+  readarray -t urls < "${fname}"
+  [[ $? != 0 ]] && warn "${fname}: cannot read file. Skipping." && continue
+ else
+  warn "$fname: file does not exist. Skipping."
+  continue
+ fi
+ if [[ !$prefix ]]; then
+  prefix=${fname##*/} # discard path
+  prefix=${prefix%.*} # discard .txt
+  msg "automatic prefix: $prefix"
+ fi
+ nn=0
+ for url in $(printf '%s\n' "${urls[@]}") ; do 
+   access_date=$(date +%Y%m%d%H%M%S)
+   fname_temp="${prefix}_${nn}_${access_date}.${ext}"
+   echo $fname_temp
+   fname_out="annotated_${fname_temp}"
+   echo $fname_out
+   echo $dir_out/$fname_out
+
+   # TODO: 
+   # find replacement for CutyCapt (medium priority)
+   #
+   #  - it does not fail on 40x, just fetches error page
+   #    issue: need to control out files manually, see below
+   #
+   #  - it fetches blank page when url does not start with http(s|)://
+   #    and not fails  
+   # 
+   #
+   # so far only CutyCapt captured all urls correctly, tho 
+   #
+   # hackish way to prevent blank page fetching 
+   [[ $(echo $url | grep -E '^http') ]] || url="https://${url}" 
+   # hackish check if site is up, to limit 40x pages
+   declare sitename=$(echo "${url}" | sed -r 's_http.*://([^/]+).*_\1_')
+   ping ${sitename} -c1 2>&1>/dev/null
+     [[ $? != 0 ]] && warn "[ping] $url unreachable. Skipping." && continue
+   msg "processing $url";
+   CutyCapt --smooth --url="${url}" --print-backgrounds=on --out="${dir_out}/$fname_temp"
+     [[ $? != 0 ]] && warn "[CutyCapt] $url cannot be processed" && continue
+
+   # to not take any chances
+   [[ -e ${dir_out}/${fname_out} ]] && prefix="duplicate_" && warn "${fname_out}: already exist.\nIt should not have happened.\nMarking as duplicate."
+
+   convert "$dir_out/$fname_temp" -fill white -undercolor black -annotate +10+10 "$url $nn (dostęp: ${access_date})" "${dir_out}/${fname_out}"
+
+   if [[ ${?} == 0 ]]; then
+    rm ${dir_out}/${fname_temp} || warn "${fname_temp}: temporary file can not be removed"
+    msg "$fname_out created ok\n"
+   else
+    warn "[ImageMagick convert] $fname_out: conversion failed\n"
+   fi
+
+   nn=$(($nn+1)) 
+
+ done 
+done
+#vim:filetype=sh textwidth=0 ts=2

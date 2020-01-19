@@ -1,0 +1,32 @@
+#!/bin/bash
+#######################################
+# name: _x.touchpad.toggle
+# desc:  toggles touchpad on/off 
+# author: Tomasz Winiarski
+# deps: xinput, sed
+# 't' stands for touchpad...
+# 
+#######################################
+# adjust depending on your hardware
+tName="DELL0784:00 06CB:7E92 Touchpad"
+tToggle=("enable" "disable") 
+
+#outcomes 0|1
+tState=$(xinput list-props "$tName" | sed -nr 's/Device Enabled.*([0|1]+)/\1/p')
+
+cmd="${tToggle[${tState}]}"
+
+xinput $cmd "$tName"
+
+if [[ $? == 0 ]]; then
+  echo "Touchpad ${cmd}d"
+  # used by wm bar
+  echo "${cmd}d" > /tmp/touchpad_state
+  exCode=0
+else 
+   "Cannot $cmd touchpad"
+   exCode=129
+fi
+
+unset tName tToggle tState cmd
+exit $exCode

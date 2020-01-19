@@ -1,0 +1,36 @@
+#!/bin/bash
+###############################
+#
+# name: _overlay.logo
+# author: Tomasz Winiarski
+# date: 2019.12.13
+# desc: Overlays graphical materials with logo
+#       automagically choosing appropriate size,
+#       dpi and logotype.
+#       Requires properly named input file.
+#       Files autocreated with _create.img are 
+#       guaranteed to be properly named and to
+#       have corresponding logo available.
+#      
+#       Part of documentation creation tools.
+#
+declare -a imgSize
+
+for inFileName in "$@" ; do
+  chosenLogo="${inFileName%%_*f}"
+  # $WORK is custom env var
+  overlayFileName="$WORK/tfk/img/logo/logo_${chosenLogo}/${chosenLogo}_logo_white.20px.margin.svg"
+  outFileName="${inFileName%.*}_with.logo.jpg"
+  # identify should output 'width height dpi'
+  imgInfo=($(identify -format '%w %h %x' "$inFileName"))
+  imgDensity=${imgInfo[2]}
+  [[ ${imgInfo[0]} -gt ${imgInfo[1]} ]] && basePixelSize="${imgInfo[0]}" || basePixelSize="${imgInfo[1]}"
+  overlayPixelSize=$(echo "${basePixelSize}/10"|bc)
+  marginPixelSize=$(echo "${basePixelSize}/20"|bc) 
+
+  echo "$inFileName" "$outFileName" "$overlayPixelSize" "${imgSize[@]}"
+  # convert -composite -background none -geometry "+${marginPixelSize}+${marginPixelSize}" -gravity northeast ${inFileName} ${overlayFileName} ${outFileName}
+  convert "${inFileName}" -background none \( ${overlayFileName} -density ${imgDensity} -resize "${overlayPixelSize}" -geometry "+${marginPixelSize}+${marginPixelSize}" -gravity northeast \) -composite ${outFileName}
+done
+
+#vim: ft=bash ts=2 tw=2
