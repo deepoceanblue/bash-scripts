@@ -36,8 +36,8 @@
 # edit to reflect your setup 
 #
 # for safety sake, keep these separate from .bashrc/rc.conf
-bash_fname="$XDG_HOME_CONFIG/bash/.bash_autoaliases"
-ranger_fname="$XDG_HOME_CONFIG/ranger/ranger_autocmds"
+bash_fname="$XDG_CONFIG_HOME/bash/.bash_autoaliases"
+ranger_fname="$XDG_CONFIG_HOME/ranger/ranger_autocmds"
 # default prefixes
 prefix_open='.o'
 prefix_paste_into='.p'
