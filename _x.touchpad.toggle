@@ -20,7 +20,8 @@ xinput $cmd "$tName"
 
 if [[ $? == 0 ]]; then
   echo "Touchpad ${cmd}d"
-  # used by wm bar
+  # used by wm bar in my setup
+  # comment out if not needed
   echo "${cmd}d" > /tmp/touchpad_state
   exCode=0
 else 
