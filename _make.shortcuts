@@ -7,12 +7,15 @@
 #
 # desc: creates shortcuts for bash and ranger from shared
 #       source file. Format for source file is:
+#       $PWD/directories
 #           -"d dir" for jump to directory shortcut
+#       $PWD/commands
 #           -"cc cmd" for command shortcut
 #       where d is any single and cc are any two alphanum chars.
 #              e.g: "m $HOME/music"
 #              or:  "kh _convert --to html"
 #                   "kp _convert --to pdf"
+#       Source files must exist in the $PWD.
 #
 #       Do not enclose records in src file in ". 
 #       One record per line.
@@ -23,6 +26,8 @@
 #       with ".p" for paste into dir; cc is prefixed with "."
 #       So "m $HOME/music" becomes, e.g. "map .om $HOME/music".
 #       To change it, modify prefix_open and prefix_paste_into.
+#       To change out files modify {bash,ranger}_fname.
+#       Out files must exist.
 #       
 # deps: none, bash built-ins
 #
@@ -90,7 +95,7 @@ while [[ $ii_data -lt $ii_max ]]; do
 
 done
 
-echo -e ${bash_shortcuts[@]} > $bash_fname & # it really makes it faster 
+echo -e ${bash_shortcuts[@]} > $bash_fname 
 echo -e ${ranger_shortcuts[@]} > $ranger_fname 
 # echo -e ${bash_shortcuts[@]} # for quick test 
 # echo -e ${ranger_shortcuts[@]} # for quick test
