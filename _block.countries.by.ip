@@ -7,7 +7,7 @@
 # deps: iptables, ipset 
 # TODO: translate to en
 ###########################
-katalog_listy_ip="$XDG_HOME_CONFIG/etc/iptables.ip.zones"
+katalog_listy_ip="$XDG_CONFIG_HOME/etc/iptables.ip.zones"
 kody_krajow="cn kn ru"
 nazwa_list_ipset="zablokowane_kraje"
 
