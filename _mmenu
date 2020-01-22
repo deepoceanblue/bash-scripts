@@ -10,6 +10,12 @@
 # usage: see helpMsg below or use `_mmenu --help`
 #
 ########################################################
+function err {
+  [[ -t 1 ]] || redir="> $(date +%Y%m%d%H%M%S).mmenu.log"
+  echo -e "$(tput setaf 1)${@}$(tput sgr0)" ${redir}
+
+}
+
 function helpMsg {
   cat << 'HELPMSG'
 
@@ -17,11 +23,17 @@ function helpMsg {
 
     USAGE:
 
-    _mmenu [options] --file|-f <filename>
+      _mmenu [options] --file|-f <filename>
 
-    _mmenu [options] --items|-i <item1> <item2> .. <item n>
+      _mmenu [options] --items|-i <item1> <item2> .. <item n>
 
-   stdin | _mmenu [options]
+
+     If no --file or --items is given, the script will try
+     to read items list from pipe:
+
+     stdin | _mmenu [options]
+
+   There are following options:
 
    --menu-app|-a (dmenu|slmenu|climenu)
      :force use of a given app to display menu.
