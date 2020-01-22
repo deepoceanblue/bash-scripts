@@ -1,7 +1,47 @@
 #!/bin/bash
-
+#########################################################
+#
+# name: _mmenu (multimenu)
+# author: Tomasz Winiarski
+# date: 20200123
+# desc: chooses appropriate menu depending on environment
+#       (X, term, console) and available apps
+#       TODO: "themes"
+# usage: see helpMsg below or use `_mmenu --help`
+#
+########################################################
 function helpMsg {
-  echo "help message here"
+  cat << 'HELPMSG'
+
+    _mmenu -- chooses appropriate menu
+
+    USAGE:
+
+    _mmenu [options] --file|-f <filename>
+
+    _mmenu [options] --items|-i <item1> <item2> .. <item n>
+
+   stdin | _mmenu [options]
+
+   --menu-app|-a (dmenu|slmenu|climenu)
+     :force use of a given app to display menu.
+      Comp. -g
+   
+   --file|-f <filename>
+     :read items to be displayed from a file.
+   
+   --gui-if-possible|-g
+     :force use of gui menu app (dmenu) if in X,
+      even if stdout is term.
+   
+   --help|-h
+     :display this message and exit.
+   
+   --items|-i <item1> <item2> .. <item n>
+     :read items to be displayed from cliargs.
+      Must be the last option.
+
+HELPMSG
 }
 
 declare items=()
@@ -18,6 +58,7 @@ while : ; do
               shift 2
     ;;
     --gui-if-possible|-g) shift ; [[ $DISPLAY ]] && [[ $(which dmenu) ]] && mApp="dmenu" || err "no dmenu in $PATH";;
+    --help|-h) helpMsg && exit 0 ;;
     --items|-i) shift ; items=("${@}"); break ;;
     '') break;;
     *)
