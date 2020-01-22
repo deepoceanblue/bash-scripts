@@ -1,0 +1,66 @@
+#!/bin/bash
+
+function helpMsg {
+  echo "help message here"
+}
+
+declare items=()
+declare mApp="";
+
+while : ; do
+
+  case "$1" in
+    --menu-app|-a) mApp="$2" ; shift 2 ;;
+    --file|-f) 
+              while read line; do
+                items+=("${line}")
+              done < "$2" 
+              shift 2
+    ;;
+    --gui-if-possible|-g) shift ; [[ $DISPLAY ]] && [[ $(which dmenu) ]] && mApp="dmenu" || err "no dmenu in $PATH";;
+    --items|-i) shift ; items=("${@}"); break ;;
+    '') break;;
+    *)
+       err "Unknown option ${1}"
+       helpMsg
+       exit 129
+    ;;
+  esac
+
+done
+
+if [[ ! $mApp ]] ; then
+  if [[ -t 1 ]] ; then
+    [[ $(which slmenu) ]] && mApp="slmenu" || mApp="climenu" # created with bash `select`
+  else
+    [[ $(which dmenu) ]] && mApp="dmenu" || err "no dmenu in $PATH"
+  fi
+fi
+
+if [[ ${#items[@]} == 0 ]]; then
+  echo "reading from pipe"
+  if [[ -p /dev/stdin ]]; then
+    while IFS= read line; do
+      items+=("${line}")
+    done
+  else
+    err "No items to display"
+    helpMsg
+    exit 130
+  fi
+fi
+
+case $mApp in 
+  dmenu) printf '%s\n' "${items[@]}" | dmenu -l 10 ;;
+  slmenu) printf '%s\n' "${items[@]}" | slmenu ;;
+  climenu) 
+          select item in "${items[@]}"; do
+            printf '%s\n' "${item}"
+            break
+          done
+  ;;
+esac
+
+exit 0
+
+#vim: ft=sh ts=2 tw=2
