@@ -6,10 +6,17 @@
 # date: 20200123
 # desc: chooses appropriate menu depending on environment
 #       (X, term, console) and available apps
-#       TODO: "themes"
 # usage: see helpMsg below or use `_mmenu --help`
 #
 ########################################################
+# theme defaults
+declare font='DejaVu Sans'
+declare nFg='lightgrey'
+declare nBg='#0c1414' # very dark grey
+declare sFg='white'
+# themes change only selected background
+declare sBg='darkgreen'
+
 function err {
   [[ -t 1 ]] || redir="> $(date +%Y%m%d%H%M%S).mmenu.log"
   echo -e "$(tput setaf 1)${@}$(tput sgr0)" ${redir}
@@ -53,11 +60,20 @@ function helpMsg {
      :read items to be displayed from cliargs.
       Must be the last option.
 
+    --prompt|p "<prompt tekst>"
+      :prompt to be used.
+
+    --theme|-t <theme>
+      :use given colorscheme. Theme might be: default, media, warning, www.
+       If -t absent in cli, default theme is used.
+
 HELPMSG
 }
 
 declare items=()
-declare mApp="";
+declare mApp=;
+declare prompt="choose: "
+declare theme="default"
 
 while : ; do
 
@@ -72,6 +88,16 @@ while : ; do
     --gui-if-possible|-g) shift ; [[ $DISPLAY ]] && [[ $(which dmenu) ]] && mApp="dmenu" || err "no dmenu in $PATH";;
     --help|-h) helpMsg && exit 0 ;;
     --items|-i) shift ; items=("${@}"); break ;;
+    --prompt|-p) prompt="${2}" ; shift 2;;
+    --theme|-t) 
+                case "$2" in
+                  warning) sBg='red';;
+                  www) sBg='#bf86af';;
+                  media) sBg='#597c80';;
+                  *) ;;
+                esac
+                shift 2
+                ;;
     '') break;;
     *)
        err "Unknown option ${1}"
@@ -91,7 +117,6 @@ if [[ ! $mApp ]] ; then
 fi
 
 if [[ ${#items[@]} == 0 ]]; then
-  echo "reading from pipe"
   if [[ -p /dev/stdin ]]; then
     while IFS= read line; do
       items+=("${line}")
@@ -103,9 +128,10 @@ if [[ ${#items[@]} == 0 ]]; then
   fi
 fi
 
-case $mApp in 
-  dmenu) printf '%s\n' "${items[@]}" | dmenu -l 10 ;;
-  slmenu) printf '%s\n' "${items[@]}" | slmenu ;;
+
+case "$mApp" in 
+  dmenu) printf '%s\n' "${items[@]}" | dmenu -b -i -l 10 -fn 'DejaVu Sans' -nf $nFg -nb $nBg -sf $sFg -sb $sBg -p "$prompt" ;;
+  slmenu) printf '%s\n' "${items[@]}" | slmenu -b -i -p "${prompt}" ;;
   climenu) 
           select item in "${items[@]}"; do
             printf '%s\n' "${item}"
