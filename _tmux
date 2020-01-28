@@ -47,14 +47,14 @@ function helpMsg {
       --help|-h
         :prints this message and exit.
 
-      --preset|-p [<preset name>] : NOT IMPLEMENTED
-        :spawns session with custom names, layout and applications running.
+      --preset|-p [<preset name>] : NOT FULLY IMPLEMENTED
+        :spawns *new* session with custom names, layout and applications running.
          Valid preset names are:
            (layout only): master-slave|ms, horizontal-split|hs, vertical-split|vs
                           grid|g
            (layout and cmds): network-monitor|nm, system-monitor|sm, coding|c
          Must be the last option.
-         All options except -s and -d will be overwritten.
+         All options except -s and -d will be silently discarded. 
          
 
       --run-detached|-d
@@ -67,6 +67,7 @@ function helpMsg {
 
       --session-name|-s [<session-name>]
         :sets the name of a session.
+
 HELPMSG
 }
 
@@ -80,18 +81,34 @@ function chooseSessionFromMenu {
   return 0
 }
 
-function use_preset {
+function use_preset { # TODO: make proper pure function?
   [[ -n $@ ]] || exit 130 # TODO: add presets
-  local -ar preset="$@"
+  preset="$@" # do not make them local for now
 
   case "$preset" in
-    hs|horizontal-split) echo "$preset";;
-    vs|vertical-split) echo "$preset";;
-    ms|master-slave) echo "$preset";;
-    grid|g) echo "$preset";;
-    c) echo "$preset";;
-    nm) echo "$preset";;
-    sm) echo "$preset";;
+
+    hs|horizontal-split)
+      splits=1
+      layout="3c80,192x46,0,0[192x23,0,0,17,192x22,0,24,19]"
+    ;;
+
+    vs|vertical-split) echo "$preset" 
+      splits=1
+      layout="06d7,192x46,0,0{96x46,0,0,17,95x46,97,0,18}"
+    ;;
+
+    ms|master-slave) echo "$preset"
+      splits=1
+    ;;
+
+    grid|g) echo "$preset"
+      splits=3
+
+    ;;
+
+    c|coding) echo "$preset";;
+    nm|network-monitor) echo "$preset";;
+    sm|system-monitor) echo "$preset";;
   esac
 }
 
@@ -127,21 +144,31 @@ else
   renameSession="tmux command-prompt -I \"#S\" \"rename-session -- '%%'\";"
 fi
 
-if [[ "$sessionExists" == true ]]; then
+if [[ "$sessionExists" == true ]]; then # code repeated to avoid issues
+                                        # with multiple levels of quoting
 
-    if [[ -z $TMUX ]]; then
-      [[ -n $cmd ]]\
-        && tmux attach-session -d -t $sessionName \; new-window $cmd\
-        || tmux attach-session -d -t $sessionName
+    if [[ -z $TMUX ]]; then # if not inside tmux session
+
+      if [[ -n $preset ]]; then
+        tmux attach-session -d -t $sessionName \; select-layout $layout 
+      elif [[ -n $cmd ]]; then
+        tmux attach-session -d -t $sessionName \; new-window $cmd
+      else
+        tmux attach-session -d -t $sessionName
+      fi
 
     else
-      [[ -n $cmd ]]\
-        && tmux switch -t "$sessionName" \; new-window $cmd\
-        || tmux switch -t "$sessionName"
+      if [[ -n $preset ]]; then
+        tmux-switch -t "$sessionName"\; select-layout $layout; 
+      elif [[ -n $cmd ]]; then
+        tmux switch -t "$sessionName" \; new-window $cmd\
+      else
+        tmux switch -t "$sessionName"
+      fi
     fi
 
 else 
-    tmux new-session ${runDetached} -s ${sessionName} "${renameSession}${cmd:-${defaultCmd}}"
+    tmux new-session ${runDetached} -s ${sessionName} "${renameSession}${cmd:-${defaultCmd}}\;"
 fi
 
 #vim: ft=bash ts=2 tw=2
