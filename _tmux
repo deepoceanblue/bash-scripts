@@ -71,13 +71,23 @@ function helpMsg {
 HELPMSG
 }
 
+
 function chooseSessionFromMenu {
-  local -a sNames
   local sName
-  while read sName ; do
-    sNames+=("${sName%%:*}") # ':' is a separator in tmux output
-  done < <(tmux list-sessions 2>/dev/null) # we discard stderr to not pollute sNames with err msg 
-  printf '%s\n' "${sNames[@]}" | _mmenu
+  tmuxVer=$(tmux -V)
+  tmuxVer="${tmuxVer##* }"
+  if [[ ${tmuxVer%%.*} -lt 2 ]]; then
+  # for tmux ver. that do not support #{var} syntax
+  # we compare only maior ver no
+    local -a sNames
+    while read sName ; do
+      sNames+=("${sName%%:*}") # ':' is a separator in tmux output
+    done < <(tmux list-sessions 2>/dev/null) # we discard stderr to not pollute sNames with err msg 
+    printf '%s\n' "${sNames[@]}" | _mmenu
+  else
+  # for newer tmux
+    tmux list-sessions -F \#{session-name} | _mmenu
+  fi
   return 0
 }
 
