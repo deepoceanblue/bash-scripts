@@ -85,7 +85,7 @@ function chooseSessionFromMenu {
     done < <(tmux list-sessions 2>/dev/null) # we discard stderr to not pollute sNames with err msg 
     printf '%s\n' "${sNames[@]}" | _mmenu
   else
-  # for newer tmux
+  # for tmux 2+
     tmux list-sessions -F \#{session-name} | _mmenu
   fi
   return 0
@@ -134,7 +134,7 @@ while :; do
     --session-name|-s) sessionName="$2" ; shift 2 ;;    
     --command|-c) shift; cmd="${@}" ; break ;;
     --help|-h) helpMsg ; exit 0 ;;
-    --preset|-p) use_preset "$2" ; shift 2 ; break ;;
+    # --preset|-p) use_preset "$2" ; shift 2 ; break ;;
     --run-detached|-d) runDetached="-d" ; shift 1 ;; # option to a tmux new(-session) command
     --choose-session-from-menu|-m) sessionName="$(chooseSessionFromMenu)" ; shift 1 ;; 
     '') break;;
@@ -178,7 +178,12 @@ if [[ "$sessionExists" == true ]]; then # code repeated to avoid issues
     fi
 
 else 
-    tmux new-session ${runDetached} -s ${sessionName} "${renameSession}${cmd:-${defaultCmd}}\;"
+    if [[ -z $TMUX ]]; then #if not inside tmux session
+      tmux new-session ${runDetached} -s ${sessionName} "${renameSession}${cmd:-${defaultCmd}}\;"
+    else
+      echo "Already inside tmux---assuming you want to switch sessions..."
+      tmux choose-tree -Zs # if inside tmux simply choose session
+    fi
 fi
 
 #vim: ft=bash ts=2 tw=2
