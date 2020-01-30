@@ -2,7 +2,7 @@
 ##########################################################
 # name: _compress
 # author; Tomasz Winiarski
-# last change: 20180412 
+# last change: 20200130
 #
 # description: rudimentary cli archiver for files/dirs
 #
@@ -112,8 +112,8 @@ echo ${files[@]}
 
 if [[ ! $files ]] ; then
   if [[ $files_menu ]] ; then
-    [[ $(which mmenu.sh) ]] || err "No dmenu|mmenu.sh in path. Aborting."
-    files="$(ls -1A $PWD | mmenu.sh)"
+    [[ $(which _mmenu) ]] || err "No dmenu|_mmenu in path. Aborting."
+    files="$(ls -1A $PWD | _mmenu)"
   else 
     err "No files chosen. Aborting."
   fi
