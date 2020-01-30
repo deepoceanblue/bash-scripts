@@ -133,9 +133,9 @@ fi
 declare gzip_cmd="gzip --best --verbose --recursive"
 case "$format" in # I do not quiet archivers' output on purpose 
   '7z') 7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on ${archive_name} ${files_to_compress} ;;
-  'gzip') ${gzip_cmd} --recursive ${files_to_compress} > ${archive_name} ;;
-  'zip') zip -r ${archive_name} ${files_to_compress} ;;
-  *) tar cfv - ${files_to_compress} | ${gzip_cmd} > ${archive_name} ;;
+  'gzip') ${gzip_cmd} --recursive ${files} > ${archive_name} ;;
+  'zip') zip -r ${archive_name} ${files} ;;
+  *) tar cfv - ${files} | ${gzip_cmd} > ${archive_name} ;;
 esac;
 
 unset aa archive_name cli_args gzip_cmd illegal_format files format files_to_compress time
