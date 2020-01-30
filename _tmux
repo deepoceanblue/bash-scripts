@@ -171,6 +171,13 @@ else
       tmux new-session ${runDetached} -s ${sessionName} "${layoutCmd}${renameSession}${cmd:-${defaultCmd}}\;"
 
     else
+      # if you prefer script to adhere to your tmux setup, i.e.
+      #   - by default: fail with msg about nesting sessions
+      #   - if nesting allowed: create nested abomination 
+      # just remove the whole else statement
+
+      # I only use bare '.t' inside tmux, as a convenient alternative to '<prefix>s'
+      # so I prefer it to make me choose session from menu
       echo "Already inside tmux---assuming you want to switch sessions..."
       tmux choose-tree -Zs # if inside tmux simply choose session
 
