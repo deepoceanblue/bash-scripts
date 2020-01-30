@@ -22,7 +22,7 @@ function helpMsg {
 
     USAGE:
 
-      _tmux <session-name> [<command>]
+      _tmux <session-name|preset-name> [<command>]
 
       _tmux [options]
 
@@ -52,8 +52,6 @@ function helpMsg {
          Valid preset names are:
            (layout only): master-slave|ms, horizontal-split|hs, vertical-split|vs
                           grid|g
-           (layout and cmds): network-monitor|nm, system-monitor|sm, coding|c
-         Must be the last option.
          All options except -s and -d will be silently discarded. 
          
 
@@ -91,34 +89,30 @@ function chooseSessionFromMenu {
   return 0
 }
 
-function use_preset { # TODO: make proper pure function?
-  [[ -n $@ ]] || exit 130 # TODO: add presets
+function use_preset { 
+  multiSplit="for ii in {1..3}; do tmux split -v; done"
+  tSel="tmux select-layout -t."
   preset="$@" # do not make them local for now
+  [[ -n $preset ]] || exit 130 # TODO: add presets
 
   case "$preset" in
 
     hs|horizontal-split)
-      splits=1
-      layout="3c80,192x46,0,0[192x23,0,0,17,192x22,0,24,19]"
+      layoutCmd="tmux split -h;";
     ;;
 
-    vs|vertical-split) echo "$preset" 
-      splits=1
-      layout="06d7,192x46,0,0{96x46,0,0,17,95x46,97,0,18}"
+    vs|vertical-split)
+      layoutCmd="tmux split -v";
     ;;
 
-    ms|master-slave) echo "$preset"
-      splits=1
+    ms|master-slave)
+      layoutCmd="$multiSplit ; $tSel main-vertical;"
     ;;
 
-    grid|g) echo "$preset"
-      splits=3
-
+    grid|g) 
+      layoutCmd="$multiSplit ; $tSel tiled;"
     ;;
 
-    c|coding) echo "$preset";;
-    nm|network-monitor) echo "$preset";;
-    sm|system-monitor) echo "$preset";;
   esac
 }
 
@@ -134,11 +128,11 @@ while :; do
     --session-name|-s) sessionName="$2" ; shift 2 ;;    
     --command|-c) shift; cmd="${@}" ; break ;;
     --help|-h) helpMsg ; exit 0 ;;
-    # --preset|-p) use_preset "$2" ; shift 2 ; break ;;
+    --preset|-p) use_preset "$2" ; shift 2 ; break ;;
     --run-detached|-d) runDetached="-d" ; shift 1 ;; # option to a tmux new(-session) command
     --choose-session-from-menu|-m) sessionName="$(chooseSessionFromMenu)" ; shift 1 ;; 
     '') break;;
-    *) sessionName="$1" ; shift 1 ; cmd="$@" ; break ;;
+    *) [[ $1 =~ g|hs|ms|vs ]] && use_preset ${1} ; sessionName="$1" ; shift 1 ; cmd="$@" ; break ;;
   esac
 
 done
@@ -150,7 +144,7 @@ if [[ -n "${sessionName}" ]]; then
   tmux has-session -t "$sessionName" 2>/dev/null
   [[ $? == 0 ]] && sessionExists="true"
 else
-  sessionName="$(date +%Y%m%d%H%M%S)"
+  sessionName="${HOSTNAME}_$(date +%Y%m%d%H%M%S)"
   renameSession="tmux command-prompt -I \"#S\" \"rename-session -- '%%'\";"
 fi
 
@@ -159,30 +153,27 @@ if [[ "$sessionExists" == true ]]; then # code repeated to avoid issues
 
     if [[ -z $TMUX ]]; then # if not inside tmux session
 
-      if [[ -n $preset ]]; then
-        tmux attach-session -d -t $sessionName \; select-layout $layout 
-      elif [[ -n $cmd ]]; then
-        tmux attach-session -d -t $sessionName \; new-window $cmd
-      else
-        tmux attach-session -d -t $sessionName
-      fi
+      [[ -n $cmd ]]\
+        && tmux attach-session -d -t $sessionName \; new-window $cmd\
+        || tmux attach-session -d -t $sessionName
 
     else
-      if [[ -n $preset ]]; then
-        tmux-switch -t "$sessionName"\; select-layout $layout; 
-      elif [[ -n $cmd ]]; then
-        tmux switch -t "$sessionName" \; new-window $cmd\
-      else
-        tmux switch -t "$sessionName"
-      fi
+
+      [[ -n $cmd ]]\
+        && tmux switch -t $sessionName \; new-window $cmd\
+        || tmux switch -t "$sessionName"
+
     fi
 
 else 
+
     if [[ -z $TMUX ]]; then #if not inside tmux session
-      tmux new-session ${runDetached} -s ${sessionName} "${renameSession}${cmd:-${defaultCmd}}\;"
+      tmux new-session ${runDetached} -s ${sessionName} "${layoutCmd}${renameSession}${cmd:-${defaultCmd}}\;"
+
     else
       echo "Already inside tmux---assuming you want to switch sessions..."
       tmux choose-tree -Zs # if inside tmux simply choose session
+
     fi
 fi
 
