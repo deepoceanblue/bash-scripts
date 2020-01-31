@@ -75,8 +75,8 @@ function chooseSessionFromMenu {
   tmuxVer=$(tmux -V)
   tmuxVer="${tmuxVer##* }"
   if [[ ${tmuxVer%%.*} -lt 2 ]]; then
-  # for tmux ver. that do not support #{var} syntax
-  # we compare only maior ver no
+  # for tmux ver. that do not support #{var} syntax.
+  # We compare only maior ver no.
     local -a sNames
     while read sName ; do
       sNames+=("${sName%%:*}") # ':' is a separator in tmux output
