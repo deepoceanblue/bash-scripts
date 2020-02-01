@@ -34,34 +34,60 @@ function helpMsg {
     --help|-h
       :display this message and exit.
 
-  EXAMPLE:
+    --layout|-l
+    ` :choose layout other than tiled (grid).
+       For valid layout names see `man tmux`.
+
+    --sync|-s
+      :set panel sync on---all keystrokes will be on-the-fly send to all panes at once.
+       Using my keybindings it can be toggled on/off manually with <C-s>S anyway.
+
+  EXAMPLES:
 
     _tmux.cmd.grid --cmd ssh --file server.urls 
     :will create tiled tmux window with separate panes, each containing ssh session for url from the file. 
 
+    _tmux.cmd.grid --file rsync.cmds --layout even-vertical
+    :will create stacked panes, each running rsync backup command directly from rsync.cmds file.
+
 HELPMSG
 }
+
+# default layout
+layout="tiled"
+# tmux commands
+tSplitCmd="tmux split -v -t. " # no trailing semicolon here!
+tSelectLayoutCmd="tmux select-layout -t." # no trailing semicolon here!
 
 panes=""
 
 while : ; do 
+
   case "$1" in
     --cmd|-c) cmd="$2" ; shift 2 ;;
     --file|-f) [[ -r "$2" ]] && fileName="$2"; shift 2;;
     --help|-h) helpMsg && exit 0;;
+    --layout|-l) layout="$2" ; shift 2;;
+    --sync|-S) tSyncCmd="tmux set synchronise-panes on ;";;
     *) break ;;
   esac
+
 done
 
 [[ -n ${fileName} ]] || exit 130
 session="${cmd:-${fileName}}"
 
+ll=1
 while read line; do
-  [[ -n $line ]] || continue    
-  panes+="tmux split -v -t. $cmd $line ; "
+
+  [[ -n $line ]] || continue 
+  panes+="$tSplitCmd $cmd $line ; "
+
 done < $fileName
 
-_tmux "$session" $panes tmux select-layout -t. tiled
+_tmux "$session" $panes $tSelectLayoutCmd $layout $tSyncCmd 
 # if no _tmux in $PATH, use the line below instead
-# tmux new-session -A -s "$session" "$panes tmux select-layout -t. tiled ;"
+# tmux new-session -A -s "$session" "$panes $tSelectLayoutCmd $layout ;"
+
+unset cmd fileName layout panes session tKillEmptyPane tSelectLayoutCmd tSplitCmd tSyncCmd
 exit 0
