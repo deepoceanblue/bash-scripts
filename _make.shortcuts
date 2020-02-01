@@ -78,7 +78,7 @@ ii_max=${#data[@]}
 
 while [[ $ii_data -lt $ii_cmds ]]; do
   # slightly less efficient but allows for variable shortcut length
-  # same may be used with the commad shortcuts, I don't need it
+  # same may be used with the commad shortcuts---I don't need it
   # shortcut="${data[$ii_data]%% *}"
   # directory="${data[$ii_data]#* }"
   shortcut="${data[$ii_data]:0:1}"
@@ -110,6 +110,9 @@ while [[ $ii_data -lt $ii_search_engines ]]; do
 
 done
 
+# bash will use elinks to resolve search engine names
+# so: `.s ddg thing you want to know` will search duckduckgo
+# no need for wrappers like surfraw and like
 bash_shortcuts+=("\
   function searchNet { elinks \"\$*\" ; }\n\
   alias ${prefix_search_net}="searchNet"\n\
@@ -137,4 +140,6 @@ echo -e ${bash_shortcuts[@]} # for quick test
 echo -e ${ranger_shortcuts[@]} # for quick test
 
 unset bash_fname bash_shortcuts cmd elinks_shortcuts elinks_dumb_searchengine ii_cmds ii_data ii_max directory prefix_open prefix_paste_into ranger_fname ranger_shortcuts search_engine shortcut
+
+exit 0
 #vim: ft=sh ts=2 tw=2

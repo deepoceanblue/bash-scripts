@@ -1,0 +1,67 @@
+#!/bin/bash
+##########################################################
+#
+# desc: executes multiple commands in tmux tiled window.
+#       If optional command supplied, it is executes on
+#       all lines of a file, otherwise, all lines in a file
+#       are executed one by one.
+# author: tmk
+# date: 20200201
+# deps: _tmux 
+#
+# USAGE: _tmux.cmd.grid --help or see helpMsg below
+# 
+##########################################################
+#
+# TODO: maybe merge with _tmux
+
+function helpMsg {
+  cat <<'HELPMSG'
+   _tmux.cmd.grid -- executes multiple commands in tmux tiled window
+
+   USAGE:
+
+    _tmux.cmd.grid [--cmd|-c <cmd>] --file|-f <fileName>
+
+    --cmd|-c <cmd>
+      :optional command that will be executed on all lines in fileName
+
+    --file|-f <fileName>
+      :will be read line by line.
+       If --cmd supplied, it will be executed on all lines.
+       If not, each line will be treated as a command and executed.
+
+    --help|-h
+      :display this message and exit.
+
+  EXAMPLE:
+
+    _tmux.cmd.grid --cmd ssh --file server.urls 
+    :will create tiled tmux window with separate panes, each containing ssh session for url from the file. 
+
+HELPMSG
+}
+
+panes=""
+
+while : ; do 
+  case "$1" in
+    --cmd|-c) cmd="$2" ; shift 2 ;;
+    --file|-f) [[ -r "$2" ]] && fileName="$2"; shift 2;;
+    --help|-h) helpMsg && exit 0;;
+    *) break ;;
+  esac
+done
+
+[[ -n ${fileName} ]] || exit 130
+session="${cmd:-${fileName}}"
+
+while read line; do
+  [[ -n $line ]] || continue    
+  panes+="tmux split -v -t. $cmd $line ; "
+done < $fileName
+
+_tmux "$session" $panes tmux select-layout -t. tiled
+# if no _tmux in $PATH, use the line below instead
+# tmux new-session -A -s "$session" "$panes tmux select-layout -t. tiled ;"
+exit 0
