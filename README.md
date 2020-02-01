@@ -1,6 +1,6 @@
 # bash-scripts
 
-Evergrowing list of bash scripts and snippets.
+Ever-growing list of bash scripts and snippets.
 
 By convention script names are prepended with `_` (an underscore) and have no `sh` extension.
 This is to limit the name clashes with installed apps and blend together commands in various langs (sh, python *etc*.).
@@ -9,7 +9,7 @@ For usage-info type:
 
   `_<scriptname> --help`
 
-or refer to `helpMsg()` inside the script file itself.
+or refer to `helpMsg` function inside the script file itself.
 
 ## Shared functionality
 
@@ -28,7 +28,7 @@ Defaults are tailored to my liking (e.g slmenu while in linuxconsole but dmenu w
 
 compresses files/dirs into tar.gz, 7z, or zip.
 Easy to extend.
-Have options to timestamp archive and choose files to compress with dmenu.
+Has options to timestamp archive and choose files to compress with dmenu.
 
 ### `_make.shortcuts`
 
@@ -43,6 +43,14 @@ simplifies use of tmux sessions.
 Written to have a single command (aliased e.g.: `.t`) that creates or attaches/switches (autonamed) sessions, optionally executing shell command (also from within tmux session).
 
 The tmux behaviour changed a lot between 1.6-2+, so YMMV; it works for me in 2+.
+
+### `_tmux.cmd.grid`
+
+creates tiled tmux window, running command in each pane.
+If command and filename given, each pane executes the same command over one line of a file.
+If only filename provided, each line is treated as a command to be executed in a separate pane.
+
+Written to simplify repetitive tasks on many urls/repos/files/whatever at once, e.g.: making ssh connections, rsync backups, file downloads, git pushes/pulls.
 
 ### `_x.touchpad.toggle`
 
