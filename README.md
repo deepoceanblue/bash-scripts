@@ -32,7 +32,8 @@ Has options to timestamp archive and choose files to compress with dmenu.
 
 ### `_make.shortcuts`
 
-uses single plaintext file to create shortcuts (bash aliases, ranger) for quick access to directories and to execute cmds. Other apps to be added.
+uses shared plaintext files to create shortcuts, aliases and such for several apps (bash, ranger, elinks).
+New apps soon.
 
 To keep consistent aliases/keybindings across different aplications/machines.
 Depends on no external tools, not even sed---as a tradeoff it relays on bash-specific functionality.
