@@ -8,6 +8,11 @@
 # date: 20200101
 #
 ##################################################################
+declare arpProtectionSet="false"
+# set to match your setup
+# here or with "-i"
+declare interface="wlp1s0"
+
 # put all your gateways info here.
 # Format:
 #  - associative array
@@ -15,11 +20,6 @@
 #  - value is a string,
 #    two space separated fields, e.g.:
 #    "192.168.0.1 0f:0f:0f:0f:0f:0f"
-declare arpProtectionSet="false"
-# set to match your setup
-# here or with "-i"
-declare interface="wlp1s0"
-
 source _shared.gateways
 
 [[ $# -ge 1 ]] || exit 130
