@@ -1,0 +1,67 @@
+#!/bin/bash
+##################################################################
+#
+# name: _arp.protection
+# desc: Execute as root. Called from _wireless at each connection.
+#       Basic arp packet control and protection from arp poisoning.
+# author: Tomasz Winiarski
+# date: 20200101
+#
+##################################################################
+# put all your gateways info here.
+# Format:
+#  - associative array
+#  - key is essid
+#  - value is a string,
+#    two space separated fields, e.g.:
+#    "192.168.0.1 0f:0f:0f:0f:0f:0f"
+declare arpProtectionSet="false"
+# set to match your setup
+# here or with "-i"
+declare interface="wlp1s0"
+
+source _shared.gateways
+
+[[ $# -ge 1 ]] || exit 130
+[[ $1 == '-i' ]] && interface="$2" && shift 2
+
+essid="$@"
+
+ip -s neighbour flush all 2>/dev/null # to get rid of 'Nothing to flush' msg
+
+for knownEssid in ${!gateway[@]} ; do
+
+  [[ $knownEssid == $essid ]] || continue
+
+  gatewayIP="${gateway[$essid]%% *}"
+  gatewayMAC="${gateway[$essid]##* }"
+
+  # long forms 
+  # set policies to DROP before we erase rules with --flush
+  for chain in INPUT OUTPUT FORWARD; do
+    arptables --policy $chain DROP
+  done
+  arptables --flush
+  arptables --append INPUT --in-interface $interface --source-ip $gatewayIP --source-mac $gatewayMAC --jump ACCEPT
+  arptables --append OUTPUT --out-interface $interface --destination-ip $gatewayIP --destination-mac $gatewayMAC --jump ACCEPT
+  
+  arp --device $interface --set $gatewayIP $gatewayMAC
+
+  arpProtectionSet="true"
+  break
+done
+
+arpwatch & disown 
+
+if [[ $arpProtectionSet == "true" ]]; then
+  echo "arp protection for gateway: $essid $gatewayIP $gatewayMAC is on."
+else 
+  arptables --policy INPUT ACCEPT 
+  arptables --policy OUTPUT ACCEPT 
+  arptables --policy FORWARD DROP # almost never needed unless you're a server
+  echo -e "No arp protection for $essid\nYou may find mac for the current gateway below\nif you wish to add it in _shared.gateways"
+  iw $interface link
+fi
+
+exit 0
+#vim: ft=bash ts=tw=2
