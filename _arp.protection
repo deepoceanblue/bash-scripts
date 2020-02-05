@@ -22,7 +22,7 @@ declare interface="wlp1s0"
 #  - value is a string,
 #    two space separated fields, e.g.:
 #    "192.168.0.1 0f:0f:0f:0f:0f:0f"
-declare -a gateway
+declare -A gateway
 source _shared.gateways
 
 essid="$@"
