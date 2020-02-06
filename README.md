@@ -77,6 +77,13 @@ Automatically chooses the right logo and converts it to match input image densit
 
 ## System
 
+### `_arp.protection`
+
+basic arp-based packet control for known networks.
+Call from your firewall or connection setup script.
+
+List of networks is kept in a separate file, look comments inside script for details.
+
 ### `_block.countries.by.ip`
 
 blocks ip ranges via iptables.
