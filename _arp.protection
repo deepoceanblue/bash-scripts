@@ -58,9 +58,10 @@ if [[ $arpProtectionSet == "true" ]]; then
 else 
   arptables --policy INPUT ACCEPT 
   arptables --policy OUTPUT ACCEPT 
-  arptables --policy FORWARD DROP # almost never needed unless you're a server
+  arptables --policy FORWARD DROP # almost never needed unless you're a router
+  # only if already connected
   echo -e "No arp protection for $essid\nYou may find mac for the current gateway below\nif you wish to add it in _shared.gateways"
-  iw $interface link
+  arp -n 
 fi
 
 exit 0
