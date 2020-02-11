@@ -51,7 +51,8 @@ creates tiled tmux window, running command in each pane.
 If command and filename given, each pane executes the same command over one line of a file.
 If only filename provided, each line is treated as a command to be executed in a separate pane.
 
-Written to simplify repetitive tasks on many urls/repos/files/whatever at once, e.g.: making ssh connections, rsync backups, file downloads, git pushes/pulls.
+Written to simplify repetitive tasks on many urls/repos/files/whatever at once, e.g.: making ssh connections, rsync backups, file downloads.
+There is option to automatically turn pane synchronization on to assist with some tasks: e.g. operations on multiple git repos.
 
 ### `_x.touchpad.toggle`
 
