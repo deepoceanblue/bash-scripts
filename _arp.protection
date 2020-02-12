@@ -36,19 +36,28 @@ for knownEssid in ${!gateway[@]} ; do
 
   [[ "$knownEssid" == "$essid" ]] || continue
 
-  gatewayIP="${gateway[$essid]%% *}"
-  gatewayMAC="${gateway[$essid]##* }"
-
+  readarray -t -d' ' gateways < <(echo ${gateway[$essid]})
   # long forms 
   # set policies to DROP before we erase rules with --flush
   for chain in INPUT OUTPUT FORWARD; do
     arptables --policy $chain DROP
   done
   arptables --flush
-  arptables --append INPUT --in-interface $interface --source-ip $gatewayIP --source-mac $gatewayMAC --jump ACCEPT
-  arptables --append OUTPUT --out-interface $interface --destination-ip $gatewayIP --destination-mac $gatewayMAC --jump ACCEPT
+
+  ii=0
+
+  while [[ $ii < ${#gateways[@]} ]] ; do
+
+    jj=$((ii+1))
+    gatewayIP=${gateways[$ii]}
+    gatewayMAC=${gateways[$jj]}
+
+    arptables --append INPUT --in-interface $interface --source-ip $gatewayIP --source-mac $gatewayMAC --jump ACCEPT
+    arptables --append OUTPUT --out-interface $interface --destination-ip $gatewayIP --destination-mac $gatewayMAC --jump ACCEPT
   
-  arp --device $interface --set $gatewayIP $gatewayMAC
+    arp --device $interface --set $gatewayIP $gatewayMAC
+    ii=$((jj+1))
+  done
 
   arpProtectionSet="true"
   break
@@ -58,6 +67,11 @@ arpwatch & disown
 
 if [[ $arpProtectionSet == "true" ]]; then
   echo "arp protection for gateway: $essid $gatewayIP $gatewayMAC is on."
+  echo 
+  arp -n
+  echo
+  arptables -L
+  echo
 else 
   arptables --policy INPUT ACCEPT 
   arptables --policy OUTPUT ACCEPT 
