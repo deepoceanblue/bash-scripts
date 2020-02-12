@@ -67,11 +67,6 @@ arpwatch & disown
 
 if [[ $arpProtectionSet == "true" ]]; then
   echo "arp protection for gateway: $essid $gatewayIP $gatewayMAC is on."
-  echo 
-  arp -n
-  echo
-  arptables -L
-  echo
 else 
   arptables --policy INPUT ACCEPT 
   arptables --policy OUTPUT ACCEPT 
